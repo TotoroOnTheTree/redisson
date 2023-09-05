@@ -136,10 +136,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
                 int value = initializedConnections.decrementAndGet();
                 if (value == 0) {
+                    //连接够了则完成
                     if (initPromise.complete(null)) {
                         log.info("{} connections initialized for {}", minimumIdleSize, entry.getClient().getAddr());
                     }
                 } else if (value > 0 && !initPromise.isDone()) {
+                    //递归创建连接
                     createConnection(entry, initPromise, minimumIdleSize, initializedConnections);
                 }
             });

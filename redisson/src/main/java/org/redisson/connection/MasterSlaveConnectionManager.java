@@ -213,6 +213,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             } else {
                 masterSlaveEntry = new MasterSlaveEntry(this, serviceManager.getConnectionWatcher(), config);
             }
+            //这里初始化连接池后与redis建立连接
             CompletableFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
             masterFuture.join();
 

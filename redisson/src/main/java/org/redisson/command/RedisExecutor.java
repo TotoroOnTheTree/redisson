@@ -51,6 +51,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 /**
@@ -125,6 +126,7 @@ public class RedisExecutor<V, R> {
 
         codec = getCodec(codec);
 
+        final AtomicLong connectStart = new AtomicLong(System.currentTimeMillis());
         CompletableFuture<RedisConnection> connectionFuture = getConnection();
 
         CompletableFuture<R> attemptPromise = new CompletableFuture<>();
@@ -180,6 +182,10 @@ public class RedisExecutor<V, R> {
                 return;
             }
 
+            long connectCost = System.currentTimeMillis() - connectStart;
+            log.debug("[xm]-connection  command {}  timeout {}", command, connectCost);
+
+            final AtomicLong sendCommandStart = new AtomicLong(System.currentTimeMillis());
             sendCommand(attemptPromise, connection);
 
             scheduleWriteTimeout(attemptPromise);
@@ -191,6 +197,8 @@ public class RedisExecutor<V, R> {
 
         attemptPromise.whenComplete((r, e) -> {
             releaseConnection(attemptPromise, connectionFuture);
+            long sendCommandCost = System.currentTimeMillis() - sendCommandStart;
+            log.debug("[xm]-send command  command {}  timeout {}", command, sendCommandCost);
 
             checkAttemptPromise(attemptPromise, connectionFuture);
         });
